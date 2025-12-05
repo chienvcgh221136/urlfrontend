@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+import { useMemo } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { useParams, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { urlApi } from '@/lib/api';
@@ -72,31 +73,26 @@ const COLORS = ['#ff6b4a', '#8b5cf6', '#14b8a6', '#f59e0b'];
 
 export default function Analytics() {
   const { shortCode } = useParams<{ shortCode: string }>();
-  const [urlData, setUrlData] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-  const [analytics, setAnalytics] = useState<any>(null);
 
   const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const response = await urlApi.getAll();
-        const url = response.data.find((u: any) => u.shortCode === shortCode);
-        if (url) {
-          setUrlData(url);
-          setAnalytics(generateFakeData(url.clicks || 0));
-        }
-      } catch (error) {
-        console.error('Failed to fetch data:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchData();
-  }, [shortCode]);
+  // Assume you have an API endpoint to get a single URL's data
+  // e.g., urlApi.getByShortCode(shortCode)
+  const { data: urlData, isLoading } = useQuery({
+    queryKey: ['urlAnalytics', shortCode],
+    queryFn: async () => {
+      const response = await urlApi.getAll(); // Keep old logic for now
+      return response.data.find((u: any) => u.shortCode === shortCode);
+    },
+    enabled: !!shortCode, // Only run query if shortCode exists
+  });
 
-  if (loading) {
+  const analytics = useMemo(() => {
+    if (!urlData) return null;
+    return generateFakeData(urlData.clicks || 0);
+  }, [urlData]);
+
+  if (isLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <p className="text-muted-foreground">Loading analytics...</p>

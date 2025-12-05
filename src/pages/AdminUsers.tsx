@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { DashboardSidebar } from '@/components/DashboardSidebar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,7 +11,9 @@ import {
   Trash2, 
   Edit, 
   MoreVertical,
-  User
+  User,
+  ExternalLink,
+  ChevronDown
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -27,13 +30,23 @@ import {
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 
+interface UrlData {
+  _id: string;
+  originalUrl: string;
+  shortCode: string;
+  clicks: number;
+  createdAt: string;
+}
+
 interface UserData {
   _id: string;
   username: string;
   createdAt: string;
+  urls: UrlData[]; // Thêm trường này
 }
 
 export default function AdminUsers() {
+  const navigate = useNavigate();
   const [users, setUsers] = useState<UserData[]>([]);
   const [filteredUsers, setFilteredUsers] = useState<UserData[]>([]);
   const [loading, setLoading] = useState(true);
@@ -44,6 +57,8 @@ export default function AdminUsers() {
   const [editUsername, setEditUsername] = useState('');
   const [editPassword, setEditPassword] = useState('');
   const [saving, setSaving] = useState(false);
+
+  const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
   useEffect(() => {
     fetchUsers();
@@ -163,46 +178,65 @@ export default function AdminUsers() {
                 <table className="w-full">
                   <thead className="bg-secondary/50">
                     <tr>
-                      <th className="text-left p-4 font-medium text-muted-foreground">User</th>
-                      <th className="text-left p-4 font-medium text-muted-foreground">Created</th>
+                      <th className="text-left p-4 font-medium text-muted-foreground w-full">User & Links</th>
+                      <th className="text-left p-4 font-medium text-muted-foreground">Shortened links</th>
                       <th className="text-right p-4 font-medium text-muted-foreground">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
                     {filteredUsers.map((user) => (
-                      <tr key={user._id} className="border-t border-border hover:bg-secondary/30 transition-colors">
-                        <td className="p-4">
-                          <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-full bg-purple/20 flex items-center justify-center text-purple font-semibold">
-                              {user.username[0].toUpperCase()}
+                      <tr key={user._id} className="border-t border-border">
+                        <td className="p-4" colSpan={3}> {/* Colspan 3 để bao gồm cả cột "Shortened links" */}
+                          <details className="group">
+                            <summary className="flex items-center justify-between cursor-pointer list-none">
+                              <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-full bg-purple/20 flex items-center justify-center text-purple font-semibold">
+                                  {user.username[0].toUpperCase()}
+                                </div>
+                                <div>
+                                  <span className="font-medium">{user.username}</span>
+                                  <p className="text-xs text-muted-foreground">
+                                    Created on {new Date(user.createdAt).toLocaleDateString()} | {user.urls?.length || 0} link(s)
+                                  </p>
+                                </div>
                             </div>
-                            <span className="font-medium">{user.username}</span>
-                          </div>
-                        </td>
-                        <td className="p-4 text-muted-foreground">
-                          {new Date(user.createdAt).toLocaleDateString()}
-                        </td>
-                        <td className="p-4 text-right">
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon">
-                                <MoreVertical className="w-4 h-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem onClick={() => openEditModal(user)}>
-                                <Edit className="w-4 h-4 mr-2" />
-                                Edit
-                              </DropdownMenuItem>
-                              <DropdownMenuItem 
-                                onClick={() => handleDelete(user._id)}
-                                className="text-destructive focus:text-destructive"
-                              >
-                                <Trash2 className="w-4 h-4 mr-2" />
-                                Delete
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
+                              <div className="flex items-center">
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" size="icon" onClick={(e) => e.stopPropagation()}>
+                                      <MoreVertical className="w-4 h-4" />
+                                    </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="end">
+                                    <DropdownMenuItem onClick={() => openEditModal(user)}>
+                                      <Edit className="w-4 h-4 mr-2" />
+                                      Edit User
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem 
+                                      onClick={() => handleDelete(user._id)}
+                                      className="text-destructive focus:text-destructive"
+                                    >
+                                      <Trash2 className="w-4 h-4 mr-2" />
+                                      Delete User
+                                    </DropdownMenuItem>
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                                <ChevronDown className="w-5 h-5 text-muted-foreground transition-transform group-open:rotate-180" />
+                              </div>
+                            </summary>
+                            <div className="pl-12 pt-4 space-y-2">
+                              {user.urls?.length > 0 ? user.urls.map(url => (
+                                <div key={url._id} className="flex items-center justify-between text-sm p-2 rounded-md bg-secondary/30">
+                                  <a href={`${baseUrl}/${url.shortCode}`} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline flex items-center gap-1">
+                                    /{url.shortCode} <ExternalLink className="w-3 h-3" />
+                                  </a>
+                                  <span className="text-muted-foreground">{url.clicks} clicks</span>
+                                </div>
+                              )) : (
+                                <p className="text-sm text-muted-foreground">This user has not created any links.</p>
+                              )}
+                            </div>
+                          </details>
                         </td>
                       </tr>
                     ))}

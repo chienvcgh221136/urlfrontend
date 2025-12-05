@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { DashboardSidebar } from '@/components/DashboardSidebar';
 import { UrlCard } from '@/components/UrlCard';
 import { Button } from '@/components/ui/button';
@@ -18,49 +19,34 @@ interface UrlData {
 
 export default function UserLinks() {
   const navigate = useNavigate();
-  const [urls, setUrls] = useState<UrlData[]>([]);
-  const [filteredUrls, setFilteredUrls] = useState<UrlData[]>([]);
-  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const queryClient = useQueryClient();
 
-  useEffect(() => {
-    fetchUrls();
-  }, []);
+  const { data: urls = [], isLoading } = useQuery<UrlData[]>({
+    queryKey: ['userUrls'],
+    queryFn: async () => (await urlApi.getAll()).data,
+  });
 
-  useEffect(() => {
-    if (search.trim()) {
-      const filtered = urls.filter(
-        (url) =>
-          (url.originalUrl && url.originalUrl.toLowerCase().includes(search.toLowerCase())) ||
-          (url.shortCode && url.shortCode.toLowerCase().includes(search.toLowerCase()))
-      );
-      setFilteredUrls(filtered);
-    } else {
-      setFilteredUrls(urls);
-    }
-  }, [search, urls]);
-
-  const fetchUrls = async () => {
-    try {
-      const response = await urlApi.getAll();
-      setUrls(response.data);
-      setFilteredUrls(response.data);
-    } catch (error) {
-      console.error('Failed to fetch URLs:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleDelete = async (id: string) => {
-    try {
-      await urlApi.delete(id);
-      setUrls((prev) => prev.filter((url) => url._id !== id));
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => urlApi.delete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['userUrls'] });
       toast.success('Link deleted');
-    } catch (error) {
+    },
+    onError: () => {
       toast.error('Failed to delete link');
-    }
-  };
+    },
+  });
+
+  const filteredUrls = useMemo(() => {
+    if (!search.trim()) return urls;
+    const lowercasedSearch = search.toLowerCase();
+    return urls.filter(
+      (url) =>
+        (url.originalUrl && url.originalUrl.toLowerCase().includes(lowercasedSearch)) ||
+        (url.shortCode && url.shortCode.toLowerCase().includes(lowercasedSearch))
+    );
+  }, [search, urls]);
 
   return (
     <div className="flex min-h-screen bg-background">
@@ -84,7 +70,7 @@ export default function UserLinks() {
             </div>
           </div>
 
-          {loading ? (
+          {isLoading ? (
             <div className="text-center py-12 text-muted-foreground">
               Loading...
             </div>
@@ -105,7 +91,7 @@ export default function UserLinks() {
                   shortCode={url.shortCode}
                   clicks={url.clicks}
                   createdAt={url.createdAt}
-                  onDelete={handleDelete}
+                  onDelete={deleteMutation.mutate}
                   onViewAnalytics={(code) => navigate(`/analytics/${code}`)}
                 />
               ))}
