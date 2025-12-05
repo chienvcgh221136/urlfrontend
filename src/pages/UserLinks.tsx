@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { DashboardSidebar } from '@/components/DashboardSidebar';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { UrlCard } from '@/components/UrlCard';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -22,17 +24,23 @@ export default function UserLinks() {
   const [filteredUrls, setFilteredUrls] = useState<UrlData[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     fetchUrls();
   }, []);
+  // Fetching data with React Query
+  const { data: urls = [], isLoading } = useQuery<UrlData[]>({
+    queryKey: ['userUrls'],
+    queryFn: async () => (await urlApi.getAll()).data,
+  });
 
   useEffect(() => {
     if (search.trim()) {
       const filtered = urls.filter(
         (url) =>
-          url.originalUrl.toLowerCase().includes(search.toLowerCase()) ||
-          url.shortCode.toLowerCase().includes(search.toLowerCase())
+          (url.originalUrl && url.originalUrl.toLowerCase().includes(search.toLowerCase())) ||
+          (url.shortCode && url.shortCode.toLowerCase().includes(search.toLowerCase()))
       );
       setFilteredUrls(filtered);
     } else {
@@ -56,11 +64,31 @@ export default function UserLinks() {
     try {
       await urlApi.delete(id);
       setUrls((prev) => prev.filter((url) => url._id !== id));
+  // Deleting data with React Query
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => urlApi.delete(id),
+    onSuccess: () => {
+      // Invalidate and refetch the urls query to get the updated list
+      queryClient.invalidateQueries({ queryKey: ['userUrls'] });
       toast.success('Link deleted');
     } catch (error) {
+    },
+    onError: () => {
       toast.error('Failed to delete link');
     }
   };
+    },
+  });
+
+  const filteredUrls = useMemo(() => {
+    if (!search.trim()) return urls;
+    const lowercasedSearch = search.toLowerCase();
+    return urls.filter(
+      (url) =>
+        (url.originalUrl && url.originalUrl.toLowerCase().includes(lowercasedSearch)) ||
+        (url.shortCode && url.shortCode.toLowerCase().includes(lowercasedSearch))
+    );
+  }, [search, urls]);
 
   return (
     <div className="flex min-h-screen bg-background">
@@ -85,6 +113,7 @@ export default function UserLinks() {
           </div>
 
           {loading ? (
+          {isLoading ? (
             <div className="text-center py-12 text-muted-foreground">
               Loading...
             </div>
@@ -106,6 +135,7 @@ export default function UserLinks() {
                   clicks={url.clicks}
                   createdAt={url.createdAt}
                   onDelete={handleDelete}
+                  onDelete={deleteMutation.mutate}
                   onViewAnalytics={(code) => navigate(`/analytics/${code}`)}
                 />
               ))}

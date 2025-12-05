@@ -3,7 +3,7 @@ import { Copy, Trash2, QrCode, BarChart3, Check, ExternalLink } from 'lucide-rea
 import { Button } from '@/components/ui/button';
 import { QRCodeModal } from './QRCodeModal';
 import toast from 'react-hot-toast';
-import { cn } from '@/lib/utils';
+import { cn, formatDate, truncateUrl } from '@/lib/utils';
 
 interface UrlCardProps {
   id: string;
@@ -37,18 +37,6 @@ export function UrlCard({
     setCopied(true);
     toast.success('Link copied!');
     setTimeout(() => setCopied(false), 2000);
-  };
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    });
-  };
-
-  const truncateUrl = (url: string, maxLength: number = 50) => {
-    return url.length > maxLength ? url.substring(0, maxLength) + '...' : url;
   };
 
   return (

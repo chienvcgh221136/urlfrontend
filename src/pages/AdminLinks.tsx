@@ -4,6 +4,7 @@ import { DashboardSidebar } from '@/components/DashboardSidebar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { urlApi } from '@/lib/api';
+import { truncateUrl } from '@/lib/utils';
 import toast from 'react-hot-toast';
 import { 
   Search, 
@@ -45,8 +46,8 @@ export default function AdminLinks() {
     if (search.trim()) {
       const filtered = urls.filter(
         (url) =>
-          url.originalUrl.toLowerCase().includes(search.toLowerCase()) ||
-          url.shortCode.toLowerCase().includes(search.toLowerCase())
+          (url.originalUrl && url.originalUrl.toLowerCase().includes(search.toLowerCase())) ||
+          (url.shortCode && url.shortCode.toLowerCase().includes(search.toLowerCase()))
       );
       setFilteredUrls(filtered);
     } else {
@@ -76,10 +77,6 @@ export default function AdminLinks() {
     } catch (error) {
       toast.error('Failed to delete link');
     }
-  };
-
-  const truncateUrl = (url: string, maxLength: number = 40) => {
-    return url.length > maxLength ? url.substring(0, maxLength) + '...' : url;
   };
 
   return (
@@ -144,7 +141,7 @@ export default function AdminLinks() {
                         </td>
                         <td className="p-4 text-muted-foreground">
                           <span title={url.originalUrl}>
-                            {truncateUrl(url.originalUrl)}
+                            {truncateUrl(url.originalUrl, 40)}
                           </span>
                         </td>
                         <td className="p-4">
