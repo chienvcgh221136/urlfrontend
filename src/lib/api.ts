@@ -40,6 +40,8 @@ export const authApi = {
     api.post('/api/user/register', data),
   userLogin: (data: { username: string; password: string }) =>
     api.post('/api/user/login', data),
+  googleLogin: (data: { token: string }) =>
+    api.post('/api/user/google-login', data),
   
   // Admin
   adminLogin: (data: { username: string; password: string }) =>

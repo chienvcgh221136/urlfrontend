@@ -94,23 +94,23 @@ export default function Login() {
 
   const handleGoogleSuccess = async (credentialResponse: any) => {
     try {
-      const decoded: any = jwtDecode(credentialResponse.credential);
-      
-      // For Google login, we'll use the email as username
-      // In a real app, you'd send this to your backend to handle
-      toast.success(`Welcome, ${decoded.name}!`);
-      
-      // Create a mock user for demo purposes
-      // In production, you'd call your backend's Google auth endpoint
-      login(credentialResponse.credential, {
-        id: decoded.sub,
-        username: decoded.email,
+      // Send Google's token to our backend
+      const response = await authApi.googleLogin({ token: credentialResponse.credential });
+
+      const { token, username } = response.data;
+      const decoded: any = jwtDecode(token); // Decode our app's token
+
+      login(token, {
+        id: decoded.id,
+        username: username,
         role: 'user',
       });
 
+      toast.success(`Welcome, ${username}!`);
       navigate('/dashboard');
-    } catch (error) {
-      toast.error('Google login failed');
+    } catch (error: any) {
+      console.error("Google Login Error:", error);
+      toast.error(error.response?.data?.error || 'Google login failed');
     }
   };
 

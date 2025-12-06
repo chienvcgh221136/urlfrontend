@@ -158,35 +158,6 @@ export default function UserDashboard() {
             </Button>
           </div>
 
-          {/* Aggregated Clicks Chart for User */}
-          <div className="bg-card rounded-xl border border-border p-6 mb-8">
-            <h2 className="text-lg font-semibold mb-4">Your Clicks Over Time</h2>
-            <div className="h-72">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={aggregatedAnalytics?.clicksPerDay}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                  <XAxis 
-                    dataKey="date" 
-                    stroke="hsl(var(--muted-foreground))"
-                    fontSize={12}
-                  />
-                  <YAxis 
-                    stroke="hsl(var(--muted-foreground))"
-                    fontSize={12}
-                  />
-                  <Tooltip 
-                    contentStyle={{
-                      backgroundColor: 'hsl(var(--card))',
-                      border: '1px solid hsl(var(--border))',
-                      borderRadius: '8px',
-                    }}
-                  />
-                  <Line type="monotone" dataKey="clicks" stroke="hsl(var(--primary))" strokeWidth={2} dot={false} />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-
           {/* Create Link Form */}
           {showForm && (
             <div className="bg-card rounded-xl border border-border p-6 mb-8 animate-fade-in">
@@ -223,6 +194,37 @@ export default function UserDashboard() {
               </form>
             </div>
           )}
+
+          {/* Aggregated Clicks Chart for User */}
+          <div className="bg-card rounded-xl border border-border p-6 mb-8">
+            <h2 className="text-lg font-semibold mb-4">Your Clicks Over Time</h2>
+            <div className="h-72">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={aggregatedAnalytics?.clicksPerDay}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                  <XAxis 
+                    dataKey="date" 
+                    stroke="hsl(var(--muted-foreground))"
+                    fontSize={12}
+                  />
+                  <YAxis 
+                    stroke="hsl(var(--muted-foreground))"
+                    fontSize={12}
+                  />
+                  <Tooltip 
+                    contentStyle={{
+                      backgroundColor: 'hsl(var(--card))',
+                      border: '1px solid hsl(var(--border))',
+                      borderRadius: '8px',
+                    }}
+                  />
+                  <Line type="monotone" dataKey="clicks" stroke="hsl(var(--primary))" strokeWidth={2} dot={false} />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          
 
           {/* Recent Links */}
           <div>
