@@ -145,7 +145,7 @@ export default function UserLinks() {
                   clicks={url.clicks}
                   createdAt={url.createdAt}
                   onDelete={deleteMutation.mutate}
-                  onEdit={handleOpenEditModal as any}
+                  onEdit={handleOpenEditModal}
                   onViewAnalytics={(code) => navigate(`/analytics/${code}`)}
                 />
               ))}

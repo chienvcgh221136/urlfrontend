@@ -82,6 +82,8 @@ export const urlApi = {
     api.post('/api/url/custom', data),
   getAll: () => api.get('/api/url'),
   delete: (id: string) => api.delete(`/api/url/${id}`),
+  update: (id: string, data: { originalUrl?: string; shortCode?: string }) =>
+    api.put(`/api/url/${id}`, data),
 };
 
 // User APIs

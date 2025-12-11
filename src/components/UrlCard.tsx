@@ -6,14 +6,18 @@ import toast from 'react-hot-toast';
 import { cn, formatDate, truncateUrl } from '@/lib/utils';
 
 interface UrlCardProps {
-  id: string;
+  id: string; // This is the _id from the database
   originalUrl: string;
   shortCode: string;
   clicks: number;
   createdAt: string;
   customDomain?: string;
   onDelete: (id: string) => void;
-  onEdit: (url: UrlCardProps) => void;
+  onEdit: (url: {
+    _id: string;
+    originalUrl: string;
+    shortCode: string;
+  }) => void;
   onViewAnalytics?: (shortCode: string) => void;
 }
 
@@ -111,7 +115,7 @@ export function UrlCard({
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => onEdit({ id, originalUrl, shortCode, clicks, createdAt, customDomain, onDelete, onEdit, onViewAnalytics })}
+                onClick={() => onEdit({ _id: id, originalUrl, shortCode })}
                 className="h-8 px-3"
               >
                 <Edit className="h-4 w-4" />
