@@ -1,9 +1,9 @@
 import { Link, useLocation } from 'react-router-dom';
-import { 
-  LayoutDashboard, 
-  Link2, 
-  User, 
-  Users, 
+import {
+  LayoutDashboard,
+  Link2,
+  User,
+  Users,
   LogOut,
   Menu,
   X,
@@ -95,7 +95,7 @@ export function DashboardSidebar() {
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium text-sidebar-foreground truncate">
-              {user?.username}
+              {user?.displayName || user?.username}
             </p>
             <p className="text-xs text-muted-foreground capitalize">
               {user?.role}

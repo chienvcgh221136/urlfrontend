@@ -3,7 +3,7 @@ import { Copy, Trash2, QrCode, BarChart3, Check, ExternalLink, Edit } from 'luci
 import { Button } from '@/components/ui/button';
 import { QRCodeModal } from './QRCodeModal';
 import toast from 'react-hot-toast';
-import { cn, formatDate, truncateUrl } from '@/lib/utils';
+import { cn, formatDate, truncateUrl, getDisplayUrl } from '@/lib/utils';
 
 interface UrlCardProps {
   id: string; // This is the _id from the database
@@ -36,29 +36,8 @@ export function UrlCard({
   const [showQR, setShowQR] = useState(false);
 
   const baseUrl = customDomain || import.meta.env.VITE_BASE_URL || import.meta.env.VITE_API_URL || 'http://localhost:5000';
-  
-  let shortUrl = `${baseUrl}/${shortCode}`;
 
-  try {
-    // Đảm bảo URL hợp lệ để parse
-    const urlToParse = originalUrl.startsWith('http') ? originalUrl : `http://${originalUrl}`;
-    const urlObj = new URL(urlToParse);
-    const params = new URLSearchParams(urlObj.search);
-    const utmValues: string[] = [];
-    
-    // Chỉ lấy GIÁ TRỊ của các tham số UTM, bỏ qua tên tham số (utm_source...)
-    ['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content'].forEach(key => {
-      const value = params.get(key);
-      if (value) utmValues.push(value);
-    });
-
-    if (utmValues.length > 0) {
-      // Nối các giá trị lại với nhau, ví dụ: ?facebook&social&summer
-      shortUrl += `?${utmValues.join('&')}`;
-    }
-  } catch (e) {
-    // Bỏ qua nếu lỗi parse URL
-  }
+  const shortUrl = getDisplayUrl(baseUrl, shortCode, originalUrl);
 
   const copyToClipboard = async () => {
     await navigator.clipboard.writeText(shortUrl);
@@ -79,7 +58,7 @@ export function UrlCard({
               rel="noopener noreferrer"
               className="text-lg font-semibold text-primary hover:underline flex items-center gap-2"
             >
-              {shortUrl.replace('http://', '').replace('https://', '')}
+              {shortUrl.replace(/^https?:\/\//, '')}
               <ExternalLink className="h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity" />
             </a>
             <div className="flex items-center gap-2">

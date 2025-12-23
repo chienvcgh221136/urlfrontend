@@ -5,12 +5,13 @@ import { DashboardSidebar } from '@/components/DashboardSidebar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { urlApi } from '@/lib/api';
-import { truncateUrl } from '@/lib/utils';
+import { truncateUrl, getDisplayUrl } from '@/lib/utils';
+import { UTMBuilder } from '@/components/UTMBuilder';
 import toast from 'react-hot-toast';
-import { 
-  Search, 
-  Link2, 
-  Trash2, 
+import {
+  Search,
+  Link2,
+  Trash2,
   ExternalLink,
   Edit,
   BarChart3,
@@ -49,7 +50,15 @@ export default function AdminLinks() {
   // Edit Modal State
   const [editingUrl, setEditingUrl] = useState<UrlData | null>(null);
   const [editOriginalUrl, setEditOriginalUrl] = useState('');
-  const [editShortCode, setEditShortCode] = useState('');
+  const [editCustomCode, setEditCustomCode] = useState('');
+  const [editUtmParams, setEditUtmParams] = useState('');
+  const [initialUtmData, setInitialUtmData] = useState<{
+    source: string;
+    medium: string;
+    campaign: string;
+    term?: string;
+    content?: string;
+  } | undefined>(undefined);
 
   const baseUrl = import.meta.env.VITE_BASE_URL || import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
@@ -82,19 +91,70 @@ export default function AdminLinks() {
 
   const handleOpenEditModal = (url: UrlData) => {
     setEditingUrl(url);
-    setEditOriginalUrl(url.originalUrl);
-    setEditShortCode(url.shortCode);
+
+    // Parse Original URL to extract UTMs and Clean URL
+    let cleanUrl = url.originalUrl;
+    const utmData = {
+      source: '',
+      medium: '',
+      campaign: '',
+      term: '',
+      content: ''
+    };
+
+    try {
+      const urlToParse = url.originalUrl.startsWith('http') ? url.originalUrl : `http://${url.originalUrl}`;
+      const urlObj = new URL(urlToParse);
+      const params = new URLSearchParams(urlObj.search);
+
+      if (params.get('utm_source')) utmData.source = params.get('utm_source') || '';
+      if (params.get('utm_medium')) utmData.medium = params.get('utm_medium') || '';
+      if (params.get('utm_campaign')) utmData.campaign = params.get('utm_campaign') || '';
+      if (params.get('utm_term')) utmData.term = params.get('utm_term') || '';
+      if (params.get('utm_content')) utmData.content = params.get('utm_content') || '';
+
+      // Clean URL (remove UTM params)
+      const keysToDelete: string[] = [];
+      params.forEach((_, key) => {
+        if (key.toLowerCase().startsWith('utm_')) {
+          keysToDelete.push(key);
+        }
+      });
+      keysToDelete.forEach(key => params.delete(key));
+
+      // Update clean URL
+      urlObj.search = params.toString();
+      cleanUrl = urlObj.href;
+    } catch (e) {
+      // Ignore
+    }
+
+    setEditOriginalUrl(cleanUrl);
+    setEditCustomCode(url.shortCode);
+    setInitialUtmData(utmData);
+    setEditUtmParams('');
   };
 
   const handleUpdateSubmit = () => {
     if (!editingUrl) return;
 
-    const changes: { originalUrl?: string; shortCode?: string } = {};
-    if (editOriginalUrl !== editingUrl.originalUrl) {
-      changes.originalUrl = editOriginalUrl;
+    let finalOriginalUrl = editOriginalUrl;
+
+    // Append UTM params if they exist
+    if (editUtmParams) {
+      if (finalOriginalUrl.includes('?')) {
+        finalOriginalUrl += `&${editUtmParams}`;
+      } else {
+        finalOriginalUrl += `?${editUtmParams}`;
+      }
     }
-    if (editShortCode !== editingUrl.shortCode) {
-      changes.shortCode = editShortCode;
+
+    const changes: { originalUrl?: string; shortCode?: string } = {};
+    if (finalOriginalUrl !== editingUrl.originalUrl) {
+      changes.originalUrl = finalOriginalUrl;
+    }
+    if (editCustomCode !== editingUrl.shortCode) {
+      changes.shortCode = editCustomCode;
     }
 
     if (Object.keys(changes).length > 0) {
@@ -119,7 +179,7 @@ export default function AdminLinks() {
   return (
     <div className="flex min-h-screen bg-background">
       <DashboardSidebar />
-      
+
       <main className="flex-1 p-6 lg:p-8">
         <div className="max-w-6xl mx-auto">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
@@ -168,7 +228,7 @@ export default function AdminLinks() {
                       <tr key={url._id} className="border-t border-border hover:bg-secondary/30 transition-colors">
                         <td className="p-4">
                           <a
-                            href={`${baseUrl}/${url.shortCode}`}
+                            href={getDisplayUrl(baseUrl, url.shortCode, url.originalUrl)}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="text-primary hover:underline font-medium flex items-center gap-1"
@@ -207,7 +267,7 @@ export default function AdminLinks() {
                                 <Edit className="w-4 h-4 mr-2" />
                                 Edit
                               </DropdownMenuItem>
-                              <DropdownMenuItem 
+                              <DropdownMenuItem
                                 onClick={() => deleteMutation.mutate(url._id)}
                                 className="text-destructive focus:text-destructive"
                               >
@@ -245,24 +305,25 @@ export default function AdminLinks() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="edit-short-code">Short Code</Label>
+                <Label htmlFor="edit-custom-code">Custom Code</Label>
                 <div className="flex items-center">
                   <span className="px-3 py-2 bg-muted border border-r-0 border-border rounded-l-md text-sm text-muted-foreground">
                     {`${(import.meta.env.VITE_BASE_URL || import.meta.env.VITE_API_URL || 'http://localhost:5000').replace(/https?:\/\//, '')}/`}
                   </span>
                   <Input
-                    id="edit-short-code"
-                    value={editShortCode}
-                    onChange={(e) => setEditShortCode(e.target.value)}
+                    id="edit-custom-code"
+                    value={editCustomCode}
+                    onChange={(e) => setEditCustomCode(e.target.value)}
                     className="rounded-l-none"
                   />
                 </div>
               </div>
+              <UTMBuilder onUTMChange={setEditUtmParams} initialData={initialUtmData} />
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setEditingUrl(null)}>Cancel</Button>
-              <Button onClick={handleUpdateSubmit} disabled={updateMutation.isLoading}>
-                {updateMutation.isLoading ? 'Saving...' : 'Save Changes'}
+              <Button onClick={handleUpdateSubmit} disabled={updateMutation.isPending}>
+                {updateMutation.isPending ? 'Saving...' : 'Save Changes'}
               </Button>
             </DialogFooter>
           </DialogContent>

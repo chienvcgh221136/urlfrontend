@@ -4,6 +4,7 @@ import { authApi } from '@/lib/api';
 interface AuthUser {
   id: string;
   username: string;
+  displayName?: string;
   role: 'user' | 'admin';
 }
 
@@ -71,7 +72,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       {!isLoading && children}
     </AuthContext.Provider>
   );
-  
+
 }
 
 export function useAuth() {

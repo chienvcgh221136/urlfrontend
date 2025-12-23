@@ -5,11 +5,11 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { userApi } from '@/lib/api';
 import toast from 'react-hot-toast';
-import { 
-  Search, 
-  Users, 
-  Trash2, 
-  Edit, 
+import {
+  Search,
+  Users,
+  Trash2,
+  Edit,
   MoreVertical,
   User,
   ExternalLink,
@@ -51,7 +51,7 @@ export default function AdminUsers() {
   const [filteredUsers, setFilteredUsers] = useState<UserData[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
-  
+
   // Edit modal state
   const [editUser, setEditUser] = useState<UserData | null>(null);
   const [editUsername, setEditUsername] = useState('');
@@ -89,7 +89,7 @@ export default function AdminUsers() {
 
   const handleDelete = async (id: string) => {
     if (!confirm('Are you sure you want to delete this user?')) return;
-    
+
     try {
       await userApi.delete(id);
       setUsers((prev) => prev.filter((user) => user._id !== id));
@@ -110,10 +110,8 @@ export default function AdminUsers() {
 
     setSaving(true);
     try {
-      const updateData: { username?: string; password?: string } = {};
-      if (editUsername !== editUser.username) {
-        updateData.username = editUsername;
-      }
+      const updateData: { password?: string } = {};
+
       if (editPassword) {
         updateData.password = editPassword;
       }
@@ -125,12 +123,8 @@ export default function AdminUsers() {
       }
 
       await userApi.update(editUser._id, updateData);
-      setUsers((prev) =>
-        prev.map((u) =>
-          u._id === editUser._id ? { ...u, username: editUsername } : u
-        )
-      );
-      toast.success('User updated');
+
+      toast.success('User updated successfully');
       setEditUser(null);
     } catch (error: any) {
       toast.error(error.response?.data?.error || 'Failed to update user');
@@ -142,7 +136,7 @@ export default function AdminUsers() {
   return (
     <div className="flex min-h-screen bg-background">
       <DashboardSidebar />
-      
+
       <main className="flex-1 p-6 lg:p-8">
         <div className="max-w-6xl mx-auto">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
@@ -179,14 +173,13 @@ export default function AdminUsers() {
                   <thead className="bg-secondary/50">
                     <tr>
                       <th className="text-left p-4 font-medium text-muted-foreground w-full">User & Links</th>
-                      <th className="text-left p-4 font-medium text-muted-foreground">Shortened links</th>
                       <th className="text-right p-4 font-medium text-muted-foreground">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
                     {filteredUsers.map((user) => (
                       <tr key={user._id} className="border-t border-border">
-                        <td className="p-4" colSpan={3}> {/* Colspan 3 để bao gồm cả cột "Shortened links" */}
+                        <td className="p-4" colSpan={2}> {/* Colspan 2 adjusted */}
                           <details className="group">
                             <summary className="flex items-center justify-between cursor-pointer list-none">
                               <div className="flex items-center gap-3">
@@ -199,7 +192,7 @@ export default function AdminUsers() {
                                     Created on {new Date(user.createdAt).toLocaleDateString()} | {user.urls?.length || 0} link(s)
                                   </p>
                                 </div>
-                            </div>
+                              </div>
                               <div className="flex items-center">
                                 <DropdownMenu>
                                   <DropdownMenuTrigger asChild>
@@ -212,7 +205,7 @@ export default function AdminUsers() {
                                       <Edit className="w-4 h-4 mr-2" />
                                       Edit User
                                     </DropdownMenuItem>
-                                    <DropdownMenuItem 
+                                    <DropdownMenuItem
                                       onClick={() => handleDelete(user._id)}
                                       className="text-destructive focus:text-destructive"
                                     >
@@ -260,7 +253,9 @@ export default function AdminUsers() {
               <Input
                 id="edit-username"
                 value={editUsername}
-                onChange={(e) => setEditUsername(e.target.value)}
+                readOnly
+                disabled
+                className="bg-muted text-muted-foreground cursor-not-allowed opacity-70"
               />
             </div>
             <div className="space-y-2">

@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { DashboardSidebar } from '@/components/DashboardSidebar';
 import { urlApi, userApi } from '@/lib/api';
+import { getDisplayUrl } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
 import { Link2, Users, MousePointerClick, TrendingUp } from 'lucide-react';
 import {
@@ -50,6 +51,7 @@ const generateAggregatedFakeData = (urls: UrlData[]) => {
 
 export default function AdminDashboard() {
   const { user } = useAuth();
+  const baseUrl = import.meta.env.VITE_BASE_URL || import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
   const { data: urls = [], isLoading: isLoadingUrls } = useQuery<UrlData[]>({
     queryKey: ['adminAllUrls'],
@@ -72,31 +74,31 @@ export default function AdminDashboard() {
   }, [urls, users]);
 
   const stats = useMemo(() => [
-    { 
-      label: 'Total Users', 
-      value: users.length, 
-      icon: Users, 
+    {
+      label: 'Total Users',
+      value: users.length,
+      icon: Users,
       color: 'bg-purple/20 text-purple',
       trend: '+12%'
     },
-    { 
-      label: 'Total Clicks', 
-      value: totalClicks, 
-      icon: MousePointerClick, 
+    {
+      label: 'Total Clicks',
+      value: totalClicks,
+      icon: MousePointerClick,
       color: 'bg-teal/20 text-teal',
       trend: '+23%'
     },
-    { 
-      label: 'Total Links', 
-      value: urls.length, 
-      icon: Link2, 
+    {
+      label: 'Total Links',
+      value: urls.length,
+      icon: Link2,
       color: 'bg-primary/20 text-primary',
       trend: '+8%'
     },
-    { 
-      label: 'Avg. Clicks/Link', 
-      value: urls.length ? Math.round(totalClicks / urls.length) : 0, 
-      icon: TrendingUp, 
+    {
+      label: 'Avg. Clicks/Link',
+      value: urls.length ? Math.round(totalClicks / urls.length) : 0,
+      icon: TrendingUp,
       color: 'bg-accent/20 text-accent',
       trend: '+5%'
     },
@@ -105,13 +107,13 @@ export default function AdminDashboard() {
   return (
     <div className="flex min-h-screen bg-background">
       <DashboardSidebar />
-      
+
       <main className="flex-1 p-6 lg:p-8">
         <div className="max-w-6xl mx-auto">
           {/* Header */}
           <div className="mb-8">
             <h1 className="text-2xl font-bold">Admin Dashboard</h1>
-            <p className="text-muted-foreground">Welcome back, {user?.username}</p>
+            <p className="text-muted-foreground">Welcome back, {user?.displayName || user?.username}</p>
           </div>
 
           {/* Stats */}
@@ -142,16 +144,16 @@ export default function AdminDashboard() {
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={aggregatedAnalytics?.clicksPerDay}>
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                  <XAxis 
-                    dataKey="date" 
+                  <XAxis
+                    dataKey="date"
                     stroke="hsl(var(--muted-foreground))"
                     fontSize={12}
                   />
-                  <YAxis 
+                  <YAxis
                     stroke="hsl(var(--muted-foreground))"
                     fontSize={12}
                   />
-                  <Tooltip 
+                  <Tooltip
                     contentStyle={{
                       backgroundColor: 'hsl(var(--card))',
                       border: '1px solid hsl(var(--border))',
@@ -211,7 +213,15 @@ export default function AdminDashboard() {
                     >
                       <div className="flex-1 min-w-0 mr-4">
                         <p className="text-sm font-medium text-primary truncate">
-                          /{url.shortCode}
+                          {(() => {
+                            const displayUrl = getDisplayUrl(baseUrl, url.shortCode, url.originalUrl);
+                            try {
+                              const urlObj = new URL(displayUrl);
+                              return urlObj.pathname + urlObj.search;
+                            } catch {
+                              return displayUrl.replace(/^https?:\/\/[^/]+/, '');
+                            }
+                          })()}
                         </p>
                         <p className="text-xs text-muted-foreground truncate">
                           {url.originalUrl}

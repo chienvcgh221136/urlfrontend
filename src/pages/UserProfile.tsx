@@ -9,8 +9,9 @@ import toast from 'react-hot-toast';
 import { User, Lock, Save } from 'lucide-react';
 
 export default function UserProfile() {
-  const { user, login, token } = useAuth();
+  const { user, login } = useAuth();
   const [username, setUsername] = useState(user?.username || '');
+  const [displayName, setDisplayName] = useState(user?.displayName || '');
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -22,10 +23,10 @@ export default function UserProfile() {
 
     setLoading(true);
     try {
-      const updateData: { username?: string; password?: string } = {};
-      
-      if (username !== user.username) {
-        updateData.username = username;
+      const updateData: { displayName?: string; password?: string } = {};
+
+      if (displayName !== user.displayName) {
+        updateData.displayName = displayName;
       }
 
       if (newPassword) {
@@ -49,9 +50,16 @@ export default function UserProfile() {
       }
 
       await userApi.update(user.id, updateData);
-      
-      if (updateData.username && token) {
-        login(token, { ...user, username: updateData.username });
+
+      const accessToken = localStorage.getItem('accessToken');
+      const refreshToken = localStorage.getItem('refreshToken');
+
+      if (accessToken && refreshToken) {
+        login({
+          accessToken,
+          refreshToken,
+          user: { ...user, ...updateData }
+        });
       }
 
       toast.success('Profile updated successfully');
@@ -68,7 +76,7 @@ export default function UserProfile() {
   return (
     <div className="flex min-h-screen bg-background">
       <DashboardSidebar />
-      
+
       <main className="flex-1 p-6 lg:p-8">
         <div className="max-w-2xl mx-auto">
           <h1 className="text-2xl font-bold mb-2">Profile Settings</h1>
@@ -86,16 +94,33 @@ export default function UserProfile() {
                   <p className="text-sm text-muted-foreground">Update your username</p>
                 </div>
               </div>
-              
+
               <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="displayName">Display Name</Label>
+                  <Input
+                    id="displayName"
+                    value={displayName}
+                    onChange={(e) => setDisplayName(e.target.value)}
+                    placeholder="Your Display Name"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    This name will be displayed on your dashboard.
+                  </p>
+                </div>
+
                 <div className="space-y-2">
                   <Label htmlFor="username">Username</Label>
                   <Input
                     id="username"
                     value={username}
-                    onChange={(e) => setUsername(e.target.value)}
-                    placeholder="Your username"
+                    readOnly
+                    className="bg-muted text-muted-foreground cursor-not-allowed"
+                    title="Username cannot be changed"
                   />
+                  <p className="text-xs text-muted-foreground">
+                    Username is used for login and cannot be changed.
+                  </p>
                 </div>
               </div>
             </div>
@@ -111,7 +136,7 @@ export default function UserProfile() {
                   <p className="text-sm text-muted-foreground">Update your password</p>
                 </div>
               </div>
-              
+
               <div className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="new-password">New Password</Label>
